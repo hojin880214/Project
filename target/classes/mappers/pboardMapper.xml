@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.project.mapper.PBoardMapper">
+  <sql id="search">
+  
+    <if test="scri.searchType =='searchType'.toString()">
+        and (product_category like CONCAT('%',#{scri.keyword},'%')
+        or product_name like CONCAT('%',#{scri.keyword},'%')
+        or product_option1 like CONCAT('%',#{scri.keyword},'%')
+        or product_option2 like CONCAT('%',#{scri.keyword},'%')
+        or product_option3 like CONCAT('%',#{scri.keyword},'%'))
+    </if>
+        
+  </sql>
+  <sql id="allSearch">
+  <if test="searchType != null">
+        
+        <if test="searchType == 'searchType'.toString()">
+            where (product_category like CONCAT('%',#{keyword},'%')
+            or product_name like CONCAT('%',#{keyword},'%')
+            or product_option1 like CONCAT('%',#{keyword},'%')
+            or product_option2 like CONCAT('%',#{keyword},'%')
+            or product_option3 like CONCAT('%',#{keyword},'%'))
+        </if>
+        
+    </if>
+  </sql>
+ 
+    <insert id="create">
+        INSERT INTO tbl_product (product_category,product_name,product_price, product_quantity,product_detail,product_option1,product_option2,product_option3) 
+        VALUES (#{product_category},#{product_name},#{product_price},#{product_quantity}, #{product_detail},#{product_option1},#{product_option2},#{product_option3});
+    </insert>
+    
+    <select id="read" resultType="ProductVO">
+        select * from tbl_product where product_no=#{product_no}
+    </select>
+    <update id="update">
+        update tbl_product set product_category=#{product_category}, product_name=#{product_name},product_price=#{product_price},product_quantity=#{product_quantity},
+        product_detail=#{product_detail},product_option1=#{product_option1},product_option2=#{product_option2},product_option3=#{product_option3}
+        where product_no=#{product_no}
+    </update>
+    <delete id="delete">
+        delete from tbl_product where product_no=#{product_no}
+    </delete>
+    
+    <select id="listSearch" resultType="ProductVO">
+        select product_no,product_category,product_name,product_price,product_quantity,product_option1,product_option2,product_option3
+        from tbl_product
+
+        order by product_no desc
+        limit #{pageStart}, #{perPageNum}
+    </select>
+    
+    <select id="cateList" resultType="ProductVO">
+        <![CDATA[
+            select p.product_no,product_category,product_name,product_price,product_quantity,product_detail,product_option1,product_option2,product_option3,reviewcnt,
+            file_fullname,file_regdate from
+            (select * from tbl_product where product_category=#{product_category}
+        ]]>
+             <include refid="search"></include>
+        <![CDATA[    
+             ) p left outer join
+            (select * from tbl_file group by product_no) f on p.product_no=f.product_no    
+
+            order by product_no desc
+            limit #{scri.pageStart}, #{scri.perPageNum}
+        ]]>
+    </select>
+
+    <select id="allList" resultType="ProductVO">
+        <![CDATA[
+            select p.product_no,product_category,product_name,product_price,product_quantity,product_detail,product_option1,product_option2,product_option3,reviewcnt,file_fullname,file_regdate 
+             from (select * from tbl_product
+        ]]>
+            <include refid="allSearch"></include>
+        <![CDATA[  
+             ) p left outer join (select * from tbl_file group by product_no) f on p.product_no=f.product_no
+            order by product_no desc
+            limit #{pageStart}, #{perPageNum}
+        ]]>
+    </select>
+    
+    <select id="countSearchTotalAll" resultType="java.lang.Integer">
+        <![CDATA[
+            select count(product_no) from tbl_product
+        ]]>
+        <include refid="allSearch"></include>
+    </select>
+    
+    <select id="countSearchTotal" resultType="java.lang.Integer">
+        <![CDATA[
+            select count(#{product_category}) from tbl_product where product_category=#{product_category}
+        ]]>
+        <include refid="search"></include>
+    </select>
+    
+    
+    <update id="updateReviewCnt">
+        update tbl_product set reviewcnt=reviewcnt+#{amount}
+        where product_no=#{product_no}
+    </update>
+    
+
+    <select id="mainCateList" resultType="ProductVO">
+        select * from tbl_product where 
+        product_category=#{product_category} order by product_regdate desc limit 5;
+    </select>
+    
+
+    <insert id="insertFile">
+        insert into tbl_file(file_fullname,product_no)
+        values(#{file_fullname},LAST_INSERT_ID())
+    </insert>
+    <select id="readFiles" resultType="string">
+        select file_fullname from tbl_file where product_no=#{product_no}
+        order by file_regdate
+    </select>
+    <delete id="deleteFile">
+        delete from tbl_file where product_no=#{product_no}
+    </delete>
+    <insert id="updateFile">
+        insert into tbl_file(file_fullname,product_no)
+        values(#{file_fullname},#{product_no})
+    </insert>
+    
+    <select id="listPage" resultType="ReplyVO">
+        select * from tbl_review where product_no=#{product_no} order by review_no
+        limit #{cri.pageStart}, #{cri.perPageNum}
+    </select>
+
+</mapper>
